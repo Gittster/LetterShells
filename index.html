@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D Parametric Model Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #viewer { width: 600px; height: 400px; border: 1px solid #ccc; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>3D Parametric Model Generator</h1>
+  <label>Width (mm): <input type="number" id="width" value="20"></label>
+  <button id="updateBtn">Update Model</button>
+  <button id="downloadBtn">Download STL</button>
+  <div id="viewer"></div>
+
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js';
+    import { STLExporter } from 'https://unpkg.com/three@0.152.2/examples/jsm/exporters/STLExporter.js';
+
+    let scene, camera, renderer, controls, model;
+
+    init();
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, 600 / 400, 0.1, 1000);
+      camera.position.z = 100;
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(600, 400);
+      document.getElementById('viewer').appendChild(renderer.domElement);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+      light.position.set(1, 1, 1).normalize();
+      scene.add(light);
+
+      updateModel();
+      animate();
+
+      document.getElementById('updateBtn').addEventListener('click', updateModel);
+      document.getElementById('downloadBtn').addEventListener('click', downloadSTL);
+    }
+
+    function updateModel() {
+      if (model) {
+        scene.remove(model);
+        model.geometry.dispose();
+        model.material.dispose();
+      }
+
+      const width = parseFloat(document.getElementById('width').value);
+
+      const geometry = new THREE.BoxGeometry(width, width, width);
+      const material = new THREE.MeshStandardMaterial({ color: 0x0077ff });
+      model = new THREE.Mesh(geometry, material);
+
+      scene.add(model);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function downloadSTL() {
+      const exporter = new STLExporter();
+      const stlString = exporter.parse(model);
+
+      const blob = new Blob([stlString], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'model.stl';
+      a.click();
+    }
+  </script>
+</body>
+</html>
